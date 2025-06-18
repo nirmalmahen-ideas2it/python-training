@@ -1,5 +1,6 @@
-import os
 import logging
+import os
+
 
 def load_env_file():
     """Load environment variables from .env file"""
@@ -12,6 +13,7 @@ def load_env_file():
                     key, value = line.split('=', 1)
                     os.environ[key.strip()] = value.strip().strip('"').strip("'")
 
+
 # Load environment variables
 load_env_file()
 
@@ -21,6 +23,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 # Logging configuration
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 
+
 def setup_logging():
     """Setup basic logging configuration"""
     logging.basicConfig(
@@ -29,4 +32,4 @@ def setup_logging():
         handlers=[
             logging.StreamHandler()
         ]
-    ) 
+    )

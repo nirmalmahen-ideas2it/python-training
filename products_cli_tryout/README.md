@@ -18,17 +18,20 @@ A simple command-line interface (CLI) tool for managing products, built with Pyt
 ## Installation
 
 1. Create a virtual environment and activate it:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 2. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Create a `.env` file in the project root with the following content:
+
 ```env
 DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 LOG_LEVEL=INFO
@@ -45,6 +48,7 @@ python -m products_cli_tryout upload-csv path/to/products.csv
 ```
 
 The CSV file should have the following columns:
+
 - name (required)
 - description (optional)
 - price (required, must be positive)
@@ -81,6 +85,7 @@ products_cli_tryout/
 ## Error Handling
 
 The application includes error handling for:
+
 - Database connection issues
 - Invalid CSV data
 - Missing or invalid product data

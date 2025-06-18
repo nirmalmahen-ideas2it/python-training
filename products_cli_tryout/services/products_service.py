@@ -1,76 +1,78 @@
 import logging
-from products_cli_tryout.db import Session
+from abc import ABC, abstractmethod
+from typing import List
+
+from sqlalchemy.exc import SQLAlchemyError
+
+from products_cli_tryout.db import db, Database
 from products_cli_tryout.models.products import Product
 
 logger = logging.getLogger(__name__)
+
 
 class ProductError(Exception):
     """Base exception for product-related errors"""
     pass
 
+
 class ProductNotFoundError(ProductError):
-    """Raised when a product is not found"""
+    """Exception raised when a product is not found"""
     pass
 
-def insert_bulk_products(products):
-    """
-    Inserts a list of products into the database.
 
-    :param products: List of Product objects to be inserted.
-    """
-    logger.info(f"Inserting {len(products)} products")
-    session = Session()
-    try:
-        session.bulk_save_objects([Product(**product) for product in products])
-        session.commit()
-        logger.info("Products inserted successfully")
-    except Exception as e:
-        session.rollback()
-        logger.error(f"Failed to insert products: {str(e)}")
-        raise ProductError(f"Failed to insert products: {str(e)}")
-    finally:
-        session.close()
+class ProductServiceInterface(ABC):
+    @abstractmethod
+    def get_all_products(self) -> List[Product]:
+        pass
 
-def get_all_products():
-    """
-    Retrieves all products from the database.
+    @abstractmethod
+    def delete_product(self, product_id: int) -> None:
+        pass
 
-    :return: List of Product objects.
-    """
-    logger.info("Retrieving all products")
-    session = Session()
-    try:
-        products = session.query(Product).all()
-        logger.info(f"Retrieved {len(products)} products")
-        return products
-    except Exception as e:
-        logger.error(f"Failed to retrieve products: {str(e)}")
-        raise ProductError(f"Failed to retrieve products: {str(e)}")
-    finally:
-        session.close()
+    @abstractmethod
+    def bulk_create_products(self, products_data: List[dict]) -> List[Product]:
+        pass
 
-def delete_product_by_id(product_id):
-    """
-    Deletes a product by its ID.
 
-    :param product_id: ID of the product to be deleted.
-    """
-    logger.info(f"Deleting product with ID: {product_id}")
-    session = Session()
-    try:
-        product = session.query(Product).filter(Product.id == product_id).first()
-        if not product:
-            logger.warning(f"Product with ID {product_id} not found")
-            raise ProductNotFoundError(f"Product with ID {product_id} not found")
-        
-        session.delete(product)
-        session.commit()
-        logger.info(f"Product {product_id} deleted successfully")
-    except ProductNotFoundError:
-        raise
-    except Exception as e:
-        session.rollback()
-        logger.error(f"Failed to delete product {product_id}: {str(e)}")
-        raise ProductError(f"Failed to delete product: {str(e)}")
-    finally:
-        session.close()
+class ProductService(ProductServiceInterface):
+    def __init__(self, db_bean: Database):
+        self.db = db_bean
+
+    def get_all_products(self) -> List[Product]:
+        """Get all products"""
+        try:
+            with self.db.get_session() as session:
+                products = session.query(Product).all()
+                return products  # Ensure to_dict() is implemented
+        except SQLAlchemyError as e:
+            logger.error(f"Error fetching products: {str(e)}")
+            raise ProductError(f"Failed to fetch products: {str(e)}")
+
+    def delete_product(self, product_id: int) -> None:
+        """Delete a product by ID"""
+        try:
+            with self.db.get_session() as session:
+                product = session.query(Product).filter(Product.id == product_id).first()
+                if not product:
+                    raise ProductNotFoundError(f"Product with ID {product_id} not found")
+                session.delete(product)
+                session.commit()
+        except SQLAlchemyError as e:
+            logger.error(f"Error deleting product {product_id}: {str(e)}")
+            raise ProductError(f"Failed to delete product: {str(e)}")
+
+    def bulk_create_products(self, products_data: List[dict]) -> List[Product]:
+        """Create multiple products"""
+        try:
+            with self.db.get_session() as session:
+                products = [Product.from_dict(data) for data in products_data]
+                session.add_all(products)
+                session.commit()
+                return products
+        except SQLAlchemyError as e:
+            logger.error(f"Error creating bulk products: {str(e)}")
+            raise ProductError(f"Failed to create bulk products: {str(e)}")
+
+
+def create_product_service(db_bean: Database = db) -> ProductServiceInterface:
+    return ProductService(db_bean)

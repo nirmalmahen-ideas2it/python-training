@@ -4,17 +4,21 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
 class CSVError(Exception):
     """Base exception for CSV-related errors"""
     pass
+
 
 class CSVFileNotFoundError(CSVError):
     """Raised when CSV file is not found"""
     pass
 
+
 class CSVValidationError(CSVError):
     """Raised when CSV data validation fails"""
     pass
+
 
 def read_csv(file_path):
     """
@@ -44,7 +48,7 @@ def read_csv(file_path):
                     # Validate required fields
                     if not all(key in row for key in ['name', 'price', 'quantity']):
                         raise CSVValidationError("Missing required fields in CSV")
-                    
+
                     # Convert and validate numeric fields
                     try:
                         price = float(row['price'])
@@ -53,7 +57,7 @@ def read_csv(file_path):
                             raise CSVValidationError("Price and quantity must be non-negative")
                     except ValueError:
                         raise CSVValidationError("Invalid numeric values in CSV")
-                    
+
                     products.append({
                         "name": row["name"].strip(),
                         "description": row.get("description", "").strip(),
@@ -63,14 +67,14 @@ def read_csv(file_path):
                 except CSVValidationError as e:
                     logger.error(f"Validation error in row: {str(e)}")
                     raise
-                
+
         if not products:
             logger.warning("No valid products found in CSV file")
             raise CSVValidationError("No valid products found in CSV file")
-            
+
         logger.info(f"Successfully read {len(products)} products from CSV")
         return products
-        
+
     except csv.Error as e:
         logger.error(f"CSV parsing error: {str(e)}")
         raise CSVError(f"Failed to parse CSV file: {str(e)}")
