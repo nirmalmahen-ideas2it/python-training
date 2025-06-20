@@ -5,7 +5,7 @@ from typing import Optional
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from config import DATABASE_URL
+from products_cli_tryout.config.config import DATABASE_URL
 
 logger = logging.getLogger(__name__)
 

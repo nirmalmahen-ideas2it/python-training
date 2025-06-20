@@ -23,13 +23,15 @@ class CSVValidationError(CSVError):
 def read_csv(file_path):
     """
     Reads and validates data from a CSV file.
-    
+
     Args:
         file_path: Path to the CSV file
-        
+
     Returns:
-        List of product dictionaries
-        
+        Tuple containing:
+        - List of product dictionaries
+        - Set of unique categories
+
     Raises:
         CSVFileNotFoundError: If file doesn't exist
         CSVValidationError: If data validation fails
@@ -40,13 +42,15 @@ def read_csv(file_path):
         raise CSVFileNotFoundError(f"File {file_path} does not exist")
 
     products = []
+
     try:
         with open(file_path, newline='', encoding='utf-8') as csv_file:
             reader = csv.DictReader(csv_file)
             for row in reader:
                 try:
                     # Validate required fields
-                    if not all(key in row for key in ['name', 'price', 'quantity']):
+                    required_fields = ['name', 'price', 'quantity', 'category']
+                    if not all(key in row for key in required_fields):
                         raise CSVValidationError("Missing required fields in CSV")
 
                     # Convert and validate numeric fields
@@ -58,11 +62,17 @@ def read_csv(file_path):
                     except ValueError:
                         raise CSVValidationError("Invalid numeric values in CSV")
 
+                    # Validate and process category
+                    category = row['category'].strip()
+                    if not category:
+                        raise CSVValidationError("Category cannot be empty")
+
                     products.append({
                         "name": row["name"].strip(),
                         "description": row.get("description", "").strip(),
                         "price": price,
-                        "quantity": quantity
+                        "quantity": quantity,
+                        "category": category
                     })
                 except CSVValidationError as e:
                     logger.error(f"Validation error in row: {str(e)}")
